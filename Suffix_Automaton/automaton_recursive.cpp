@@ -10,8 +10,6 @@ using namespace std;
 
 #define ALPHABETSIZE 26
 
-inline void countSquare(uint32_t node);
-
 string input;
 
 struct State {
@@ -32,6 +30,7 @@ struct State {
 vector<State> st;
 uint32_t sz, last, transitions, finals, doublesCount;
 
+// Initialization of state
 void sa_init(uint32_t n) {
     st.resize(2 * n);
     st[0].len = 0;
@@ -46,6 +45,7 @@ inline void sa_extend(char c) {
     // Ugly hack, don't do this
     c = c - 97;
 
+    // Create new prefix node
     uint32_t cur = sz++;
     st[cur].len = st[last].len + 1;
     st[cur].firstpos = 0;
@@ -54,9 +54,12 @@ inline void sa_extend(char c) {
         st[p].next[c] = cur;
 
         // We're sure there's no transition for the character c
+        // Longest suffix 'v' such that 'vc' is not in Infix(w)
         transitions++;
         p = st[p].link;
     }
+
+    // We've reached the root, set suffix link to it
     if (p == -1) {
         st[cur].link = 0;
 
@@ -66,9 +69,12 @@ inline void sa_extend(char c) {
             st[cur].link = q;
 
         } else {
+
+            // Clone state p
             uint32_t clone = sz++;
             st[clone].len = st[p].len + 1;
 
+            // Copy transitions of q to clone
             for (int i = 0; i < ALPHABETSIZE; i++) {
                 st[clone].next[i] = st[q].next[i];
                 if (st[clone].next[i] != -1)
@@ -78,13 +84,18 @@ inline void sa_extend(char c) {
 
             st[clone].firstpos = st[cur].len - st[clone].len;
 
+            // Redirect all edges from p to root with letter 'c' which point q to to point to clone
+            // p := iterator
             while (p != -1 && st[p].next[c] == q) {
                 st[p].next[c] = clone;
                 p = st[p].link;
             }
+
+            // prefix state and 
             st[q].link = st[cur].link = clone;
         }
     }
+    // Update last with longest prefix
     last = cur;
 }
 
@@ -137,7 +148,6 @@ void suffix_dfs(uint32_t curr, vector<int>& visited) {
     stack.push_back(curr);
 
     uint32_t check = st[curr].len / 2;
-    //cout << "CANDIDATE: " << st[stack[check]].len << '\n';
 
     if (st[curr].len % 2 == 0 && st[curr].candidateFor == visited[check]) {
         doublesCount++;
