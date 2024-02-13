@@ -88,7 +88,6 @@ inline void sa_extend(char c) {
     last = cur;
 }
 
-vector<uint32_t> vecStack;
 
 void constructSuffixChildren() {
     
@@ -97,49 +96,55 @@ void constructSuffixChildren() {
     }
 }
 
-void prefix_dfs() {
+vector<pair<uint32_t, uint32_t>> vecStack;
 
-    std::stack<pair<uint32_t, uint32_t>> recursion;
+void prefix_dfs() {
+    stack<pair<uint32_t, uint32_t>> recursion;
 
     recursion.push({0, 0});
 
-    uint32_t depth = 0;
-    while (!recursion.empty()) {
-        pair<uint32_t, uint32_t> curr = recursion.top();
-
-        if (depth > curr.second) {
-            int diff = depth - curr.second;
-            while (diff--) vecStack.pop_back();
-            depth = curr.second;
-        }
-        
-        vecStack.push_back(curr.first);
+    while(!recursion.empty()) {
+        auto curr = recursion.top();
         recursion.pop();
 
-        uint32_t check = vecStack.size() / 2;
+        while(!vecStack.empty() && curr.second <= vecStack[vecStack.size() - 1].second) {
+            vecStack.pop_back();
+        }
 
-        if (st[vecStack[check]].len * 2 == st[curr.first].len) {
-            st[curr.first].candidateFor = vecStack[check];
+        vecStack.push_back(curr);
+
+        if (st[curr.first].len % 2 == 0) {
+            st[curr.first].candidateFor = vecStack[vecStack.size() / 2].first;
         }
 
         for (uint32_t neighbour : st[curr.first].next) {
             if (neighbour != -1 && st[neighbour].len == st[curr.first].len + 1) {
-
                 recursion.push({ neighbour, curr.second + 1 });
-
             }
         }
-        depth++;
-
 
     }
+
+
 }
+
+int problemNodes[6] = {7321213, 22640644, 15832021, 5660611, 9760712, 20099058};
 
 void debugPrintSuffixChildren() {
 
-
     for (int i = 0; i < sz; i++) {
+        cout << "CURR: " << i << '\n';
+        cout << "CHILDREN\n";
+        for (auto child : st[i].suffixChildren) {
+            cout << child << '\n';
+        }
+    }
+}
 
+void debugPrintProblemNodes() {
+
+
+    for (int i : problemNodes) {
         cout << "CURR: " << i << '\n';
         cout << "CHILDREN\n";
         for (auto child : st[i].suffixChildren) {
@@ -149,43 +154,38 @@ void debugPrintSuffixChildren() {
 
 }
 
-void suffix_dfs() {
-    
 
+void suffix_dfs(vector<int> visited) {
+    
     std::stack<pair<uint32_t, uint32_t>> recursion;
 
     recursion.push({0, 0});
+    visited[0] = 0;
 
-    uint32_t depth = 0;
     while (!recursion.empty()) {
-        pair<uint32_t, uint32_t> curr = recursion.top();
-
-        if (depth > curr.second) {
-            int diff = depth - curr.second;
-            while (diff--) vecStack.pop_back();
-            depth = curr.second;
-        }
-        
-
-        vecStack.push_back(curr.first);
+        auto curr = recursion.top();
+        //cout << "CURR: " << curr.first << '\n';
         recursion.pop();
 
-        uint32_t check = vecStack.size() / 2;
+        while (!vecStack.empty() && curr.second <= vecStack[vecStack.size() - 1].second) {
+            visited[st[vecStack[vecStack.size() - 1].first].len] = -1;
+            vecStack.pop_back();
+        }
 
-        if (st[vecStack[check]].len * 2 == st[curr.first].len && st[curr.first].candidateFor == vecStack[check]) {
+        vecStack.push_back(curr);
+        visited[st[curr.first].len] = curr.first;
+
+        uint32_t check = st[curr.first].len / 2;
+
+        if (st[curr.first].len % 2 == 0 && visited[check] == st[curr.first].candidateFor) {
             doublesCount++;
         }
 
         for (uint32_t neighbour : st[curr.first].suffixChildren) {
-            if (neighbour != -1 && st[neighbour].len == st[curr.first].len + 1) {
-
-                recursion.push({ neighbour, curr.second + 1 });
-
-                //prefix_dfs(neighbour);
-            }
+            recursion.push({ neighbour, curr.second + 1 });
         }
-        depth++;
 
+        //visited[st[curr.first].len] = -1;
 
     }
 }
@@ -222,7 +222,8 @@ int main(int argc, char** argv) {
 
     vecStack.clear();
 
-    suffix_dfs();
+    vector<int> visited(input.size() + 1, -1);
+    suffix_dfs(visited);
 
     printf("%d\n%d\n%d\n%d\n", sz,
             transitions, finals, doublesCount);

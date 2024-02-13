@@ -130,20 +130,24 @@ void debugPrintSuffixChildren() {
 
 }
 
-void suffix_dfs(uint32_t curr) {
+void suffix_dfs(uint32_t curr, vector<int>& visited) {
+
+    visited[st[curr].len] = curr;
     
     stack.push_back(curr);
 
-    uint32_t check = stack.size() / 2;
+    uint32_t check = st[curr].len / 2;
     //cout << "CANDIDATE: " << st[stack[check]].len << '\n';
 
-    if (st[stack[check]].len * 2 == st[curr].len && st[curr].candidateFor == stack[check]) {
+    if (st[curr].len % 2 == 0 && st[curr].candidateFor == visited[check]) {
         doublesCount++;
     }
 
     for (uint32_t neighbour : st[curr].suffixChildren) {
-        suffix_dfs(neighbour);
+        suffix_dfs(neighbour, visited);
     }
+
+    visited[st[curr].len] = -1;
 
     stack.pop_back();
 }
@@ -180,7 +184,9 @@ int main(int argc, char** argv) {
 
     stack.clear();
 
-    suffix_dfs(0);
+    vector<int> visited(input.size() + 1, -1);
+
+    suffix_dfs(0, visited);
 
     printf("%d\n%d\n%d\n%d\n", sz,
             transitions, finals, doublesCount);
